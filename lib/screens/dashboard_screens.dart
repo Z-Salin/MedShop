@@ -382,7 +382,7 @@ class ProfileScreen extends StatelessWidget {
         // --- SETTINGS LIST ---
         const Divider(),
         ListTile(
-          leading: const Icon(Icons.person_outline),
+          leading: const Icon(Icons.person_outline, color: Colors.deepPurple),
           title: const Text('Edit Profile'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
@@ -393,7 +393,7 @@ class ProfileScreen extends StatelessWidget {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.location_on_outlined),
+          leading: const Icon(Icons.location_on_outlined, color: Colors.deepPurple),
           title: const Text('Delivery Addresses'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
