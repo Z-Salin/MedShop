@@ -213,7 +213,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
         },
       ),
 
-      // 7. The Floating Action Button (FAB)
+      // 7. The Floating Action Button
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
         backgroundColor: Colors.deepPurple,

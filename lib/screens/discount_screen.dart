@@ -12,16 +12,16 @@ class DiscountScreen extends StatelessWidget {
         title: const Text('Special Offers'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      // A clean GridView for our discounted items
+      //  GridView for our discounted items
       body: GridView.builder(
         padding: const EdgeInsets.all(16.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.70, // Slightly taller to fit the extra price text
+          childAspectRatio: 0.70,
         ),
-        itemCount: 6, // 6 mock sale items
+        itemCount: 6,
         itemBuilder: (context, index) {
           return _buildDiscountCard(context, index);
         },
@@ -30,14 +30,13 @@ class DiscountScreen extends StatelessWidget {
   }
 
   Widget _buildDiscountCard(BuildContext context, int index) {
-    // Mock data for the math
     double originalPrice = 5.00 + index;
-    double discountPrice = originalPrice * 0.8; // 20% off!
+    double discountPrice = originalPrice * 0.8; // 20% off
 
-    // The Stack allows us to place the "SALE" badge floating on top of the Card
+    // "SALE" badge floating on top of the Card
     return Stack(
       children: [
-        // Bottom Layer: The actual product card
+        // The actual product card
         Card(
           elevation: 3,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -70,7 +69,7 @@ class DiscountScreen extends StatelessWidget {
                           style: const TextStyle(
                             color: Colors.red,
                             fontSize: 12,
-                            decoration: TextDecoration.lineThrough, // Crosses out the text!
+                            decoration: TextDecoration.lineThrough,
                           ),
                         ),
                         Text(
@@ -80,7 +79,7 @@ class DiscountScreen extends StatelessWidget {
                       ],
                     ),
 
-                    // Add to Cart Button hooked up to your actual CartProvider
+                    // Add to Cart Button
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.deepPurple.shade50,
@@ -110,7 +109,7 @@ class DiscountScreen extends StatelessWidget {
           ),
         ),
 
-        // Top Layer: The Floating "20% OFF" Badge
+        // The Floating "20% OFF" Badge
         Positioned(
           top: 0,
           right: 0,

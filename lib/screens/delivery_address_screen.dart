@@ -8,7 +8,6 @@ class DeliveryAddressScreen extends StatefulWidget {
 }
 
 class _DeliveryAddressScreenState extends State<DeliveryAddressScreen> {
-  // A mock list of addresses. The integer tracks which one is selected.
   int _defaultAddressIndex = 0;
 
   final List<Map<String, String>> _addresses = [
@@ -39,7 +38,7 @@ class _DeliveryAddressScreenState extends State<DeliveryAddressScreen> {
           final isDefault = _defaultAddressIndex == index;
 
           return Card(
-            elevation: isDefault ? 4 : 1, // Make the default one pop out slightly
+            elevation: isDefault ? 4 : 1,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(color: isDefault ? Colors.deepPurple : Colors.transparent, width: 2),
@@ -49,7 +48,7 @@ class _DeliveryAddressScreenState extends State<DeliveryAddressScreen> {
               borderRadius: BorderRadius.circular(12),
               onTap: () {
                 setState(() {
-                  _defaultAddressIndex = index; // Changes the default address!
+                  _defaultAddressIndex = index;
                 });
               },
               child: Padding(

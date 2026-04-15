@@ -132,7 +132,7 @@ class _CustomerDashboard extends StatelessWidget {
 
   // Helper widget for the vertical product grid
   Widget _buildProductCard(BuildContext context, int index) {
-    // NEW: We wrap the Card in an InkWell to make it clickable!
+    // clickable!
     return InkWell(
       onTap: () {
         Navigator.push(

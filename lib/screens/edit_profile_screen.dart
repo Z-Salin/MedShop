@@ -8,17 +8,15 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  // Pre-filling the controllers with mock data
   final TextEditingController _nameController = TextEditingController(text: 'Zisan Azad Salin');
   final TextEditingController _phoneController = TextEditingController(text: '+880 1712-345678');
   final TextEditingController _emailController = TextEditingController(text: 'zisan@gmail.com');
 
   void _saveProfile() {
-    // In a real app, you would send this to your database
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile Updated Successfully!')),
     );
-    Navigator.pop(context); // Go back to the settings page
+    Navigator.pop(context);
   }
 
   @override

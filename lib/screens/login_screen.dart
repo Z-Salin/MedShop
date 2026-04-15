@@ -15,7 +15,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // A simple mock login function
   void _handleLogin() {
     String username = _usernameController.text.trim().toLowerCase();
 
