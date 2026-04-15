@@ -7,7 +7,6 @@ import 'edit_profile_screen.dart';
 import 'delivery_address_screen.dart';
 import 'settings_screen.dart';
 
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -133,42 +132,53 @@ class _CustomerDashboard extends StatelessWidget {
 
   // Helper widget for the vertical product grid
   Widget _buildProductCard(BuildContext context, int index) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Center(child: Icon(Icons.local_pharmacy, size: 50, color: Colors.teal)),
-            const Spacer(),
-            const Text('Vitamin C Zinc', style: TextStyle(fontWeight: FontWeight.bold)),
-            const Text('Square Pharma', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('\$2.50', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
-                IconButton(
-                  icon: const Icon(Icons.add_shopping_cart, size: 20, color: Colors.deepPurple),
-                  onPressed: () {
-                    Provider.of<CartProvider>(context, listen: false).addItem(
-                      'p_vitc_$index',
-                      'Vitamin C Zinc',
-                      2.50,
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Added Vitamin C to cart!'),
-                          duration: Duration(seconds: 1)
-                      ),
-                    );
-                  },
-                ),
-              ],
-            )
-          ],
+    // NEW: We wrap the Card in an InkWell to make it clickable!
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const MedicineDetailScreen(name: "Vitamin C Zinc", price: "\$2.50")
+          ),
+        );
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(child: Icon(Icons.local_pharmacy, size: 50, color: Colors.teal)),
+              const Spacer(),
+              const Text('Vitamin C Zinc', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Square Pharma', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('\$2.50', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                  IconButton(
+                    icon: const Icon(Icons.add_shopping_cart, size: 20, color: Colors.deepPurple),
+                    onPressed: () {
+                      Provider.of<CartProvider>(context, listen: false).addItem(
+                        'p_vitc_$index',
+                        'Vitamin C Zinc',
+                        2.50,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Added Vitamin C to cart!'),
+                            duration: Duration(seconds: 1)
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -376,7 +386,6 @@ class ProfileScreen extends StatelessWidget {
           title: const Text('Edit Profile'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
-
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const EditProfileScreen()),
@@ -388,7 +397,6 @@ class ProfileScreen extends StatelessWidget {
           title: const Text('Delivery Addresses'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
-
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const DeliveryAddressScreen()),
@@ -413,7 +421,6 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: () {
-
             Provider.of<CartProvider>(context, listen: false).clearCart();
 
             Navigator.pushAndRemoveUntil(
@@ -432,6 +439,63 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ==========================================
+// 5. MEDICINE DETAIL SCREEN
+// ==========================================
+class MedicineDetailScreen extends StatelessWidget {
+  final String name;
+  final String price;
+
+  const MedicineDetailScreen({super.key, required this.name, required this.price});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(name),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.teal.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.medication, size: 120, color: Colors.teal),
+            ),
+            const SizedBox(height: 32),
+            Text(name, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(price, style: const TextStyle(fontSize: 24, color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            const Text(
+              "Detailed description of the medicine goes here. This includes active ingredients, recommended dosage instructions, and potential side effects.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey, height: 1.5),
+            ),
+            const Spacer(),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text("Back to Dashboard", style: TextStyle(fontSize: 18)),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(56),
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }

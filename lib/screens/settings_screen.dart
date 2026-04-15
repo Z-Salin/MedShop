@@ -49,8 +49,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(() {
                 _darkModeEnabled = value;
               });
-              // Note: Actually changing the app's theme requires a ThemeProvider,
-              // which we can add later if you want to make it fully functional!
             },
           ),
 

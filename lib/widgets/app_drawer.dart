@@ -4,6 +4,7 @@ import '../providers/user_provider.dart'; // Import your provider class
 import '../screens/upload_screen.dart';
 import '../screens/reminder_screen.dart';
 import '../screens/discount_screen.dart';
+import '../screens/settings_screen.dart';
 
 
 class AppDrawer extends StatelessWidget {
@@ -111,7 +112,13 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Settings'),
-            onTap: () { /* Navigate to Settings */ },
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
           ),
         ],
       ),
