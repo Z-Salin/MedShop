@@ -7,6 +7,7 @@ import 'edit_profile_screen.dart';
 import 'delivery_address_screen.dart';
 import 'settings_screen.dart';
 
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -73,7 +74,6 @@ class _CustomerDashboard extends StatelessWidget {
           ),
           itemCount: 8,
           itemBuilder: (context, index) {
-            // FIX 1: Passed the context here!
             return _buildProductCard(context, index);
           },
         ),
@@ -146,7 +146,6 @@ class _CustomerDashboard extends StatelessWidget {
             const Text('Vitamin C Zinc', style: TextStyle(fontWeight: FontWeight.bold)),
             const Text('Square Pharma', style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 8),
-            // FIX 2: Removed "const" and added the clickable IconButton with Cart logic
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -252,7 +251,6 @@ class CartScreen extends StatelessWidget {
             child: ListView.builder(
               itemCount: cart.items.length,
               itemBuilder: (context, index) {
-                // We need both the item data AND its unique key (productId) to delete it
                 final productId = cart.items.keys.toList()[index];
                 final item = cart.items.values.toList()[index];
 
@@ -266,9 +264,8 @@ class CartScreen extends StatelessWidget {
                     title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Qty: ${item.quantity}  x  \$${item.price.toStringAsFixed(2)}'),
 
-                    // NEW: A Row containing both the price and the delete button
                     trailing: SizedBox(
-                      width: 100, // Gives the row enough space so it doesn't squish
+                      width: 100,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -279,7 +276,6 @@ class CartScreen extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.delete_outline, color: Colors.red),
                             onPressed: () {
-                              // Call the new method we just made in the Provider!
                               Provider.of<CartProvider>(context, listen: false).removeItem(productId);
 
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -349,11 +345,9 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We check the role so we can display their title
     final role = Provider.of<UserProvider>(context).role;
     final isOwner = role == 'owner';
 
-    // We use a ListView so it handles small screens nicely without overflowing
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
@@ -382,7 +376,7 @@ class ProfileScreen extends StatelessWidget {
           title: const Text('Edit Profile'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
-            // NEW: Navigate to Edit Profile
+
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const EditProfileScreen()),
@@ -394,7 +388,7 @@ class ProfileScreen extends StatelessWidget {
           title: const Text('Delivery Addresses'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
-            // NEW: Navigate to Delivery Addresses
+
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const DeliveryAddressScreen()),
@@ -419,11 +413,9 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: () {
-            // 1. Clear out their shopping cart for safety
+
             Provider.of<CartProvider>(context, listen: false).clearCart();
 
-            // 2. The Bridge Burner!
-            // This takes them to the login screen AND destroys the entire page history.
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -433,8 +425,8 @@ class ProfileScreen extends StatelessWidget {
           icon: const Icon(Icons.logout),
           label: const Text('Log Out', style: TextStyle(fontSize: 16)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red.shade50, // Light red background
-            foregroundColor: Colors.red,         // Red text and icon
+            backgroundColor: Colors.red.shade50,
+            foregroundColor: Colors.red,
             padding: const EdgeInsets.symmetric(vertical: 16),
             elevation: 0,
           ),
