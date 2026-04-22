@@ -39,18 +39,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               });
             },
           ),
-          SwitchListTile(
-            title: const Text('Dark Mode'),
-            subtitle: const Text('Switch to a dark theme'),
-            secondary: const Icon(Icons.dark_mode_outlined),
-            activeColor: Colors.deepPurple,
-            value: _darkModeEnabled,
-            onChanged: (bool value) {
-              setState(() {
-                _darkModeEnabled = value;
-              });
-            },
-          ),
 
           const Divider(),
 
