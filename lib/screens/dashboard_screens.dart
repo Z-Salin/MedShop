@@ -394,11 +394,18 @@ class CartScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     if (cart.items.isNotEmpty) {
+                      // 1. Grab the user's email!
+                      final email = Provider.of<UserProvider>(context, listen: false).user?.email ?? 'Unknown_Customer';
+
+                      // 2. Pass ALL THREE arguments to the cloud provider
                       Provider.of<OrderProvider>(context, listen: false).placeOrder(
                         cart.totalAmount,
                         cart.items.values.toList(),
+                        email, // <--- Here is the missing 3rd argument!
                       );
+
                       cart.clearCart();
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Order Sent to Owner for Approval!'),
