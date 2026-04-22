@@ -13,6 +13,7 @@ import 'bill_activity_screen.dart';
 import 'pending_prescriptions_screen.dart';
 import 'expiring_soon_screen.dart';
 import 'dart:io';
+import '../providers/prescription_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -308,119 +309,159 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-    if (cart.items.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Your Cart is Empty', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your Cart', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF6200EA), Color(0xFFB388FF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
         ),
-      );
-    }
-
-    return SafeArea(
-      child: Column(
+      ),
+      body: Column(
         children: [
+          // --- NEW: THE PRESCRIPTION SYNC BUTTON ---
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.deepPurple.shade50,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final email = userProvider.user?.email ?? 'Unknown_Customer';
+
+                // 1. Ask the cloud if the Owner approved anything for this email
+                final newItems = await Provider.of<PrescriptionProvider>(context, listen: false)
+                    .fetchAndClearApproved(email);
+
+                if (!context.mounted) return;
+
+                if (newItems.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No new approved prescriptions yet!')),
+                  );
+                  return;
+                }
+
+                // 2. Dump the approved items directly into the local Cart!
+                final cartProvider = Provider.of<CartProvider>(context, listen: false);
+                for (var item in newItems) {
+                  // Make sure this matches your CartProvider's exact addItem arguments!
+                  cartProvider.addItem(
+                    item['id'],
+                    item['name'],
+                    (item['price'] ?? 0).toDouble(),
+                  );
+                }
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Successfully imported ${newItems.length} prescription(s)!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.downloading, color: Colors.white),
+              label: const Text('Check for Approved Prescriptions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00BFA5), // Teal accent
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+
+          // --- THE REST OF YOUR NORMAL CART ---
           Expanded(
-            child: ListView.builder(
+            child: cart.items.isEmpty
+                ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('Your cart is empty', style: TextStyle(fontSize: 20, color: Colors.grey)),
+                ],
+              ),
+            )
+                : ListView.builder(
               itemCount: cart.items.length,
-              itemBuilder: (context, index) {
-                final productId = cart.items.keys.toList()[index];
-                final item = cart.items.values.toList()[index];
+              itemBuilder: (context, i) {
+                final cartItem = cart.items.values.toList()[i];
+                final productId = cart.items.keys.toList()[i];
 
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.deepPurple,
-                      child: Icon(Icons.medication, color: Colors.white),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.deepPurple.shade100,
+                      child: Text('${cartItem.quantity}x', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
                     ),
-                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Qty: ${item.quantity}  x  \$${item.price.toStringAsFixed(2)}'),
-
-                    trailing: SizedBox(
-                      width: 100,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(
-                            '\$${(item.price * item.quantity).toStringAsFixed(2)}',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () {
-                              Provider.of<CartProvider>(context, listen: false).removeItem(productId);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${item.name} removed'),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                    title: Text(cartItem.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Total: \$${(cartItem.price * cartItem.quantity).toStringAsFixed(2)}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        cart.removeItem(productId);
+                      },
                     ),
                   ),
                 );
               },
             ),
           ),
+
+          // --- CHECKOUT AREA ---
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 10, offset: const Offset(0, -5))],
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total Amount', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                    Text(
-                      '\$${cart.totalAmount.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                    ),
+                    const Text('Total Amount', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                    Text('\$${cart.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                   ],
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (cart.items.isNotEmpty) {
-                      // 1. Grab the user's email!
-                      final email = Provider.of<UserProvider>(context, listen: false).user?.email ?? 'Unknown_Customer';
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (cart.items.isNotEmpty) {
+                        final email = userProvider.user?.email ?? 'Unknown_Customer';
 
-                      // 2. Pass ALL THREE arguments to the cloud provider
-                      Provider.of<OrderProvider>(context, listen: false).placeOrder(
-                        cart.totalAmount,
-                        cart.items.values.toList(),
-                        email, // <--- Here is the missing 3rd argument!
-                      );
+                        // Pass the cart data to the cloud OrderProvider
+                        Provider.of<OrderProvider>(context, listen: false).placeOrder(
+                          cart.totalAmount,
+                          cart.items.values.toList(),
+                          email,
+                        );
 
-                      cart.clearCart();
+                        cart.clearCart();
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Order Sent to Owner for Approval!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Order Sent to Owner for Approval!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
+                    child: const Text('Checkout Now', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
-                  child: const Text('Checkout', style: TextStyle(fontSize: 18)),
-                )
+                ),
               ],
             ),
           )
