@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
-import '../main.dart'; // To access MainLayout
+import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,31 +11,51 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controllers listen to what the user types in the text fields
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _isLoginMode = true; // Toggles between Login and Register modes
 
-  void _handleLogin() {
-    String username = _usernameController.text.trim().toLowerCase();
+  Future<void> _submitAuth() async {
+    final email = _emailController.text.trim();
+    final pass = _passwordController.text.trim();
 
-    // For now, if they type "owner", they get owner privileges.
-    // Otherwise, they default to a customer.
-    String assignedRole = (username == 'owner') ? 'owner' : 'customer';
+    if (email.isEmpty || pass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in all fields')));
+      return;
+    }
 
-    // 1. Update our Provider (Store Room) with the new role
-    Provider.of<UserProvider>(context, listen: false).setRole(assignedRole);
+    setState(() => _isLoading = true);
 
-    // 2. Navigate to the Main Dashboard and remove the login screen from history
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MainLayout()),
-    );
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    String? errorMessage;
+
+    // Send the request to Firebase
+    if (_isLoginMode) {
+      errorMessage = await userProvider.signIn(email, pass);
+    } else {
+      errorMessage = await userProvider.signUp(email, pass);
+    }
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (errorMessage != null) {
+      // Show Firebase's error (e.g. "Wrong password" or "Email already in use")
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
+    } else {
+      // Success! Route to the Dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainLayout()), // Make sure this matches your main navigation layout name!
+      );
+    }
   }
 
-  // Always dispose of controllers when done to prevent memory leaks!
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -47,54 +67,71 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(32.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // App Logo / Title
-                const Icon(Icons.local_pharmacy, size: 80, color: Colors.deepPurple),
+                const Icon(Icons.local_pharmacy, size: 80, color: Color(0xFF6200EA)),
                 const SizedBox(height: 16),
-                const Text(
-                  'Welcome to MedShop',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                Text(
+                  _isLoginMode ? 'Welcome Back' : 'Create Account',
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepPurple),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
 
-                // Username Input
+                // Email Field
                 TextField(
-                  controller: _usernameController,
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'Username (type "owner" or "customer")',
+                    labelText: 'Email Address',
+                    prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Password Input
+                // Password Field
                 TextField(
                   controller: _passwordController,
-                  obscureText: true, // Hides the text (dots)
+                  obscureText: true,
                   decoration: const InputDecoration(
                     labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock_outline),
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Login Button
-                ElevatedButton(
-                  onPressed: _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
+                // Submit Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submitAuth,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6200EA),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(_isLoginMode ? 'Login' : 'Sign Up', style: const TextStyle(fontSize: 18)),
                   ),
-                  child: const Text('Login', style: TextStyle(fontSize: 18)),
                 ),
+                const SizedBox(height: 16),
+
+                // Toggle Mode Button
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _isLoginMode = !_isLoginMode;
+                    });
+                  },
+                  child: Text(
+                    _isLoginMode ? "Don't have an account? Sign Up" : "Already have an account? Login",
+                    style: const TextStyle(color: Colors.deepPurple),
+                  ),
+                )
               ],
             ),
           ),

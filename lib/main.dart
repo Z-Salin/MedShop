@@ -9,8 +9,14 @@ import 'providers/order_provider.dart';
 import 'providers/discount_provider.dart';
 import 'providers/inventory_provider.dart';
 import 'providers/supplier_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(
     MultiProvider(
       providers: [

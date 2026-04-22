@@ -61,8 +61,5 @@ class InventoryProvider with ChangeNotifier {
       'createdAt': FieldValue.serverTimestamp(), // Always good to track when it was added
     });
 
-    // Notice we don't call notifyListeners() here!
-    // Why? Because pushing to the cloud automatically triggers the snapshot listener above,
-    // which handles updating the UI for us automatically. Pure magic.
   }
 }

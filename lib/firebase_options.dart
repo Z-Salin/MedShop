@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -65,4 +62,14 @@ class DefaultFirebaseOptions {
     storageBucket: 'medshop-2026.firebasestorage.app',
     iosBundleId: 'com.example.medshop',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyC-yUFFZp-2TZyah4UM-Oqb2D1UUXdySYc',
+    appId: '1:343187262376:web:7494858625984d0f192b9d',
+    messagingSenderId: '343187262376',
+    projectId: 'medshop-2026',
+    authDomain: 'medshop-2026.firebaseapp.com',
+    storageBucket: 'medshop-2026.firebasestorage.app',
+  );
+
 }
