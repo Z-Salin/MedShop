@@ -6,7 +6,9 @@ import 'widgets/app_drawer.dart';
 import 'screens/dashboard_screens.dart';
 import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
-
+import 'providers/discount_provider.dart';
+import 'providers/inventory_provider.dart';
+import 'providers/supplier_provider.dart';
 
 void main() {
   runApp(
@@ -14,7 +16,10 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()), // NEW!
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => DiscountProvider()),
+        ChangeNotifierProvider(create: (_) => InventoryProvider()),
+        ChangeNotifierProvider(create: (_) => SupplierProvider()),
       ],
       child: const MedShopApp(),
     ),

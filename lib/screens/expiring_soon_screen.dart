@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/discount_provider.dart';
 
 class ExpiringSoonScreen extends StatelessWidget {
   const ExpiringSoonScreen({super.key});
@@ -95,8 +97,61 @@ class ExpiringSoonScreen extends StatelessWidget {
                         // A button for the owner to quickly apply a discount or remove stock
                         ElevatedButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(isExpired ? 'Removed from database.' : 'Moved to Discount Sale screen!')),
+                            if (isExpired) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from database.')));
+                              return;
+                            }
+
+                            // NEW: A controller to hold whatever number the Owner types
+                            final TextEditingController percentController = TextEditingController(text: '20');
+
+                            // Show a dialog to choose the custom discount percentage
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: Text('Discount ${item['name']}'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('Enter the discount percentage below:'),
+                                      const SizedBox(height: 16),
+                                      // NEW: The custom text field!
+                                      TextField(
+                                        controller: percentController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Discount %',
+                                          border: OutlineInputBorder(),
+                                          suffixText: '%',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        // 1. Safely parse the number the user typed
+                                        int percentage = int.tryParse(percentController.text) ?? 0;
+
+                                        if (percentage > 0 && percentage <= 100) {
+                                          // 2. Send it to the Provider using the CUSTOM percentage!
+                                          Provider.of<DiscountProvider>(context, listen: false)
+                                              .addDiscountItem(item['name'], 4.00, percentage, item['expiry']);
+
+                                          Navigator.pop(context);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Applied $percentage% OFF!'), backgroundColor: Colors.green),
+                                          );
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                                      child: const Text('Apply Discount'),
+                                    ),
+                                  ],
+                                );
+                              },
                             );
                           },
                           style: ElevatedButton.styleFrom(
@@ -105,7 +160,7 @@ class ExpiringSoonScreen extends StatelessWidget {
                             minimumSize: const Size(80, 30),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                           ),
-                          child: Text(isExpired ? 'Discard' : 'Discount 50%'),
+                          child: Text(isExpired ? 'Discard' : 'Apply Discount'),
                         )
                       ],
                     ),

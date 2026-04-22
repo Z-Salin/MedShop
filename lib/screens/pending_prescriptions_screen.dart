@@ -10,37 +10,115 @@ class PendingPrescriptionsScreen extends StatefulWidget {
 }
 
 class _PendingPrescriptionsScreenState extends State<PendingPrescriptionsScreen> {
-  // Mock data representing photos customers have uploaded
   final List<Map<String, dynamic>> _prescriptions = [
     {'id': 'RX-782', 'customer': 'Alice Johnson', 'date': 'Today, 2:15 PM'},
     {'id': 'RX-783', 'customer': 'Bob Brown', 'date': 'Today, 1:45 PM'},
     {'id': 'RX-784', 'customer': 'Charlie Davis', 'date': 'Yesterday, 10:30 AM'},
   ];
 
-  // Function to handle the button clicks
-  void _reviewPrescription(int index, bool isApproved) {
+  // Controllers for our new popup form
+  final TextEditingController _medicinesController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+
+  @override
+  void dispose() {
+    _medicinesController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  // 1. The specific function for REJECTING a prescription
+  void _rejectPrescription(int index) {
     final item = _prescriptions[index];
-
-    // If approved, actually add it to the global CartProvider!
-    if (isApproved) {
-      Provider.of<CartProvider>(context, listen: false).addItem(
-        'rx_${item['id']}', // A unique ID for this prescription
-        'Prescription: ${item['id']}',
-        15.00, // A mock price for the prescription items
-      );
-    }
-
-    // Remove the item from the list
     setState(() {
       _prescriptions.removeAt(index);
     });
-
-    // Show a success/rejection message
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(isApproved ? 'Prescription ${item['id']} Approved & Added to Cart!' : 'Prescription ${item['id']} Rejected.'),
-        backgroundColor: isApproved ? Colors.green : Colors.red,
-      ),
+      SnackBar(content: Text('Prescription ${item['id']} Rejected.'), backgroundColor: Colors.red),
+    );
+  }
+
+  // 2. The NEW function that opens the pricing popup
+  void _showApprovalDialog(int index) {
+    final item = _prescriptions[index];
+    _medicinesController.clear();
+    _priceController.clear();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Process ${item['id']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Customer: ${item['customer']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              const Text('Review the photo, then enter the required medicines and total cost.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _medicinesController,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Prescribed Medicines (e.g. Napa x2)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _priceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Total Price (\$)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.attach_money),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_priceController.text.isEmpty || _medicinesController.text.isEmpty) return;
+
+                // Grab the inputted data
+                final double finalPrice = double.tryParse(_priceController.text) ?? 0.0;
+                final String medicinesList = _medicinesController.text;
+
+                // Push this specific custom order to the Cart Provider!
+                Provider.of<CartProvider>(context, listen: false).addItem(
+                  'rx_${item['id']}',
+                  'RX: $medicinesList',
+                  finalPrice,
+                );
+
+                // Close the dialog
+                Navigator.pop(context);
+
+                // Remove from the pending list
+                setState(() {
+                  _prescriptions.removeAt(index);
+                });
+
+                // Show Success
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Invoice sent to ${item['customer']}\'s cart!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+              child: const Text('Send Invoice to Customer'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -50,7 +128,6 @@ class _PendingPrescriptionsScreenState extends State<PendingPrescriptionsScreen>
       appBar: AppBar(
         title: const Text('Pending Prescriptions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
-        // Keeping our vibrant theme!
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -61,7 +138,6 @@ class _PendingPrescriptionsScreenState extends State<PendingPrescriptionsScreen>
           ),
         ),
       ),
-      // If the list is empty, show a nice "All caught up" message
       body: _prescriptions.isEmpty
           ? const Center(
         child: Column(
@@ -70,7 +146,6 @@ class _PendingPrescriptionsScreenState extends State<PendingPrescriptionsScreen>
             Icon(Icons.check_circle_outline, size: 80, color: Colors.green),
             SizedBox(height: 16),
             Text('All caught up!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey)),
-            Text('No pending prescriptions to review.', style: TextStyle(color: Colors.grey)),
           ],
         ),
       )
@@ -82,11 +157,11 @@ class _PendingPrescriptionsScreenState extends State<PendingPrescriptionsScreen>
 
           return Card(
             margin: const EdgeInsets.only(bottom: 24),
-            clipBehavior: Clip.antiAlias, // Ensures the grey image box has rounded corners
+            clipBehavior: Clip.antiAlias,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Simulated Image Area (Where the camera photo would go)
+                // Simulated Image Area
                 Container(
                   height: 200,
                   width: double.infinity,
@@ -124,7 +199,8 @@ class _PendingPrescriptionsScreenState extends State<PendingPrescriptionsScreen>
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () => _reviewPrescription(index, false),
+                              // Calls the updated Reject function
+                              onPressed: () => _rejectPrescription(index),
                               icon: const Icon(Icons.close, color: Colors.red),
                               label: const Text('Reject', style: TextStyle(color: Colors.red, fontSize: 16)),
                               style: OutlinedButton.styleFrom(
@@ -136,9 +212,10 @@ class _PendingPrescriptionsScreenState extends State<PendingPrescriptionsScreen>
                           const SizedBox(width: 16),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => _reviewPrescription(index, true),
-                              icon: const Icon(Icons.check, color: Colors.white),
-                              label: const Text('Approve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              // Calls our new popup dialog!
+                              onPressed: () => _showApprovalDialog(index),
+                              icon: const Icon(Icons.receipt_long, color: Colors.white),
+                              label: const Text('Process', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,

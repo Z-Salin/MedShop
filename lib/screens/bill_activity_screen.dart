@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/order_provider.dart';
 
 class BillActivityScreen extends StatelessWidget {
   const BillActivityScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Mock data representing recent customer orders
-    final List<Map<String, dynamic>> recentBills = [
-      {'id': '#ORD-001', 'date': 'Today, 10:30 AM', 'items': 3, 'total': 12.50, 'status': 'Completed', 'customer': 'John Doe'},
-      {'id': '#ORD-002', 'date': 'Today, 11:15 AM', 'items': 1, 'total': 4.00, 'status': 'Pending', 'customer': 'Jane Smith'},
-      {'id': '#ORD-003', 'date': 'Yesterday, 4:45 PM', 'items': 5, 'total': 22.00, 'status': 'Completed', 'customer': 'Alice Johnson'},
-      {'id': '#ORD-004', 'date': 'Yesterday, 6:20 PM', 'items': 2, 'total': 8.50, 'status': 'Completed', 'customer': 'Bob Brown'},
-    ];
+    // 1. Listen to the completed orders from our Provider
+    final completedOrders = Provider.of<OrderProvider>(context).completedOrders;
+
+    // 2. Dynamically calculate the real revenue
+    final totalRevenue = completedOrders.fold(0.0, (sum, order) => sum + order.total);
 
     return Scaffold(
       appBar: AppBar(
@@ -20,7 +20,7 @@ class BillActivityScreen extends StatelessWidget {
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF6200EA), Color(0xFFB388FF)], // Vibrant Purple Gradient
+              colors: [Color(0xFF6200EA), Color(0xFFB388FF)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -29,79 +29,73 @@ class BillActivityScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // A nice summary header
+          // Live Summary Header
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.deepPurple.shade50,
               border: Border(bottom: BorderSide(color: Colors.deepPurple.shade100)),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total Orders', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                    Text('124', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                    const Text('Total Orders', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                    Text('${completedOrders.length}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('Total Revenue', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                    Text('\$47.00', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green)),
+                    const Text('Total Revenue', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                    Text('\$${totalRevenue.toStringAsFixed(2)}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green)),
                   ],
                 ),
               ],
             ),
           ),
 
-          // The list of bills
+          // The Live List of Bills
           Expanded(
-            child: ListView.builder(
+            child: completedOrders.isEmpty
+                ? const Center(child: Text('No completed bills yet.', style: TextStyle(fontSize: 16, color: Colors.grey)))
+                : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: recentBills.length,
+              itemCount: completedOrders.length,
               itemBuilder: (context, index) {
-                final bill = recentBills[index];
-                final isCompleted = bill['status'] == 'Completed';
+                final order = completedOrders[index];
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: InkWell( // NEW: Makes the whole card clickable
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
-                      // Navigate to the Detailed Bill Screen
+                      // Navigate to the Detailed Bill Screen with the REAL order data
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BillDetailScreen(billData: bill),
+                          builder: (context) => BillDetailScreen(orderData: order),
                         ),
                       );
                     },
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       leading: CircleAvatar(
-                        backgroundColor: isCompleted ? Colors.green.shade50 : Colors.orange.shade50,
-                        child: Icon(
-                          Icons.receipt_long,
-                          color: isCompleted ? Colors.green : Colors.orange,
-                        ),
+                        backgroundColor: Colors.green.shade50,
+                        child: const Icon(Icons.receipt_long, color: Colors.green),
                       ),
-                      title: Text(bill['id'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${bill['date']} • ${bill['items']} items'),
+                      title: Text(order.id, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('${order.date} • ${order.items.length} items'),
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('\$${bill['total'].toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text('\$${order.total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           Text(
-                            bill['status'],
-                            style: TextStyle(
-                              color: isCompleted ? Colors.green : Colors.orange,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                            order.status,
+                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
                           ),
                         ],
                       ),
@@ -113,14 +107,10 @@ class BillActivityScreen extends StatelessWidget {
           ),
         ],
       ),
-      // NEW: Floating button to download the summary
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Downloading Daily Summary as PDF...'),
-              backgroundColor: Colors.deepPurple,
-            ),
+            const SnackBar(content: Text('Downloading Daily Summary as PDF...'), backgroundColor: Colors.deepPurple),
           );
         },
         backgroundColor: const Color(0xFF6200EA),
@@ -133,20 +123,18 @@ class BillActivityScreen extends StatelessWidget {
 }
 
 // ==========================================
-// NEW: DETAILED BILL SCREEN
+// UPDATED: DETAILED BILL SCREEN
 // ==========================================
 class BillDetailScreen extends StatelessWidget {
-  final Map<String, dynamic> billData;
+  final OrderModel orderData; // Now accepts our real OrderModel!
 
-  const BillDetailScreen({super.key, required this.billData});
+  const BillDetailScreen({super.key, required this.orderData});
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = billData['status'] == 'Completed';
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('Order ${billData['id']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Order ${orderData.id}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -167,24 +155,15 @@ class BillDetailScreen extends StatelessWidget {
             Center(
               child: Column(
                 children: [
-                  Icon(
-                      isCompleted ? Icons.check_circle : Icons.pending,
-                      size: 80,
-                      color: isCompleted ? Colors.green : Colors.orange
-                  ),
+                  const Icon(Icons.check_circle, size: 80, color: Colors.green),
                   const SizedBox(height: 16),
                   Text(
-                      '\$${billData['total'].toStringAsFixed(2)}',
+                      '\$${orderData.total.toStringAsFixed(2)}',
                       style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)
                   ),
                   Text(
-                    billData['status'].toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isCompleted ? Colors.green : Colors.orange,
-                      letterSpacing: 2,
-                    ),
+                    orderData.status.toUpperCase(),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green, letterSpacing: 2),
                   ),
                 ],
               ),
@@ -196,31 +175,26 @@ class BillDetailScreen extends StatelessWidget {
             // Order Info
             const Text('ORDER DETAILS', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             const SizedBox(height: 16),
-            _buildDetailRow('Date & Time:', billData['date']),
-            _buildDetailRow('Customer:', billData['customer']),
+            _buildDetailRow('Date & Time:', orderData.date),
+            _buildDetailRow('Customer:', orderData.customer),
             _buildDetailRow('Payment Method:', 'Credit Card ending in 4242'),
 
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
 
-            // Mock Items Purchased List
+            // LIVE Items Purchased List
             const Text('ITEMS PURCHASED', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             const SizedBox(height: 16),
-            ListTile(
+
+            // We map through the actual items the customer bought!
+            ...orderData.items.map((item) => ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.medication),
-              title: const Text('Napa Extra 500mg'),
-              subtitle: const Text('Qty: 2  x  \$1.50'),
-              trailing: const Text('\$3.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.medication_liquid),
-              title: const Text('Beximco Cough Syrup'),
-              subtitle: const Text('Qty: 1  x  \$4.00'),
-              trailing: const Text('\$4.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
+              title: Text(item.name),
+              subtitle: Text('Qty: ${item.quantity}  x  \$${item.price.toStringAsFixed(2)}'),
+              trailing: Text('\$${(item.price * item.quantity).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            )),
 
             const SizedBox(height: 24),
             const Divider(),
@@ -231,21 +205,17 @@ class BillDetailScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Total Amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('\$${billData['total'].toStringAsFixed(2)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                Text('\$${orderData.total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
               ],
             ),
-            const SizedBox(height: 80), // Padding for the floating button
+            const SizedBox(height: 80),
           ],
         ),
       ),
-      // NEW: Floating button to print the individual bill
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Sending ${billData['id']} to receipt printer...'),
-              backgroundColor: const Color(0xFF00BFA5), // Vibrant Teal
-            ),
+            SnackBar(content: Text('Sending ${orderData.id} to receipt printer...'), backgroundColor: const Color(0xFF00BFA5)),
           );
         },
         backgroundColor: const Color(0xFF00BFA5),
@@ -256,7 +226,6 @@ class BillDetailScreen extends StatelessWidget {
     );
   }
 
-  // Helper widget for drawing neat rows of data
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),

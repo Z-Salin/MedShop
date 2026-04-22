@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/discount_provider.dart'; // NEW: Imported our live data brain!
 
 class DiscountScreen extends StatelessWidget {
   const DiscountScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Fetch the live list of discounted items pushed by the Owner
+    final sales = Provider.of<DiscountProvider>(context).discountedItems;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Special Offers'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      //  GridView for our discounted items
-      body: GridView.builder(
+      // If the Owner hasn't pushed any sales, show a nice empty message
+      body: sales.isEmpty
+          ? const Center(child: Text('No active sales right now. Check back later!', style: TextStyle(color: Colors.grey, fontSize: 16)))
+          : GridView.builder(
         padding: const EdgeInsets.all(16.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
@@ -21,22 +27,19 @@ class DiscountScreen extends StatelessWidget {
           mainAxisSpacing: 16,
           childAspectRatio: 0.70,
         ),
-        itemCount: 6,
+        itemCount: sales.length, // Now dynamically tied to real data!
         itemBuilder: (context, index) {
-          return _buildDiscountCard(context, index);
+          // Pass the specific item data to the card builder
+          return _buildDiscountCard(context, sales[index]);
         },
       ),
     );
   }
 
-  Widget _buildDiscountCard(BuildContext context, int index) {
-    double originalPrice = 5.00 + index;
-    double discountPrice = originalPrice * 0.8; // 20% off
-
-    // "SALE" badge floating on top of the Card
+  // Updated to accept the live 'DiscountItem' object instead of just an index number
+  Widget _buildDiscountCard(BuildContext context, DiscountItem item) {
     return Stack(
       children: [
-        // The actual product card
         Card(
           elevation: 3,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -52,11 +55,11 @@ class DiscountScreen extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Text('Cough Syrup', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const Text('Beximco Pharma', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                // Using live data for name and expiry
+                Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text('Exp: ${item.expiryDate}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 8),
 
-                // The Price Row with the crossed-out original price
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -65,7 +68,7 @@ class DiscountScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '\$${originalPrice.toStringAsFixed(2)}',
+                          '\$${item.originalPrice.toStringAsFixed(2)}', // Live original price
                           style: const TextStyle(
                             color: Colors.red,
                             fontSize: 12,
@@ -73,13 +76,12 @@ class DiscountScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '\$${discountPrice.toStringAsFixed(2)}',
+                          '\$${item.discountedPrice.toStringAsFixed(2)}', // Live discounted price
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple, fontSize: 16),
                         ),
                       ],
                     ),
 
-                    // Add to Cart Button
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.deepPurple.shade50,
@@ -88,10 +90,11 @@ class DiscountScreen extends StatelessWidget {
                       child: IconButton(
                         icon: const Icon(Icons.add_shopping_cart, size: 20, color: Colors.deepPurple),
                         onPressed: () {
+                          // Pushing the real sale item into the Cart
                           Provider.of<CartProvider>(context, listen: false).addItem(
-                            'p_sale_$index',
-                            'Cough Syrup (Sale)',
-                            discountPrice,
+                            item.id,
+                            '${item.name} (Sale)',
+                            item.discountedPrice,
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -109,7 +112,6 @@ class DiscountScreen extends StatelessWidget {
           ),
         ),
 
-        // The Floating "20% OFF" Badge
         Positioned(
           top: 0,
           right: 0,
@@ -122,9 +124,9 @@ class DiscountScreen extends StatelessWidget {
                 bottomLeft: Radius.circular(16),
               ),
             ),
-            child: const Text(
-              '20% OFF',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+            child: Text(
+              '${item.discountPercentage}% OFF', // Live dynamic discount percentage!
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
         ),

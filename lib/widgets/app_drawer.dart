@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Import provider
-import '../providers/user_provider.dart'; // Import your provider class
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 import '../screens/upload_screen.dart';
 import '../screens/reminder_screen.dart';
 import '../screens/discount_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/pending_orders_screen.dart';
+import '../screens/supplier_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -26,17 +27,19 @@ class AppDrawer extends StatelessWidget {
               color: Colors.deepPurple,
             ),
             child: Text(
-              'MedShop ($userRole)', // Let's show the role here so you can see it
+              'MedShop ($userRole)',
               style: const TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
-
 
           // --- SHARED MENU ITEMS ---
           ListTile(
             leading: const Icon(Icons.home_outlined),
             title: const Text('Home'),
-            onTap: () { /* Navigate to Home */ },
+            onTap: () {
+              // Navigate to Home
+              Navigator.pop(context);
+            },
           ),
 
           // --- CUSTOMER ONLY ITEMS ---
@@ -45,9 +48,7 @@ class AppDrawer extends StatelessWidget {
               leading: const Icon(Icons.upload_file),
               title: const Text('Upload Prescription'),
               onTap: () {
-                // 1. Close the drawer first
                 Navigator.pop(context);
-                // 2. Navigate to the new screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const UploadScreen()),
@@ -58,7 +59,7 @@ class AppDrawer extends StatelessWidget {
               leading: const Icon(Icons.alarm),
               title: const Text('Reminder'),
               onTap: () {
-                Navigator.pop(context); // Close the drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const ReminderScreen()),
@@ -69,7 +70,7 @@ class AppDrawer extends StatelessWidget {
               leading: const Icon(Icons.local_offer),
               title: const Text('Discounts'),
               onTap: () {
-                Navigator.pop(context); // Close the drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const DiscountScreen()),
@@ -83,25 +84,31 @@ class AppDrawer extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.folder_outlined),
               title: const Text('Inventory'),
-              onTap: () { /* Navigate to Inventory */ },
+              onTap: () {
+                // Navigate to Inventory
+                Navigator.pop(context);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.shopping_bag_outlined, color: Colors.deepPurple),
               title: const Text('Pending Orders'),
               onTap: () {
-                Navigator.pop(context); // Closes the drawer
+                Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const PendingOrdersScreen()));
               },
             ),
             ListTile(
               leading: const Icon(Icons.local_shipping_outlined),
               title: const Text('Supplier'),
-              onTap: () { /* Navigate to Supplier */ },
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SupplierScreen()));
+              },
             ),
           ],
 
           // --- SHARED SETTINGS ---
-          const Divider(), // A visual line separator
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Settings'),

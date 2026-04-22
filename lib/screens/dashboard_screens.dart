@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/order_provider.dart';
+import '../providers/inventory_provider.dart'; // NEW: Imported the live inventory brain
 import 'login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'delivery_address_screen.dart';
@@ -10,7 +12,7 @@ import 'manage_inventory_screen.dart';
 import 'bill_activity_screen.dart';
 import 'pending_prescriptions_screen.dart';
 import 'expiring_soon_screen.dart';
-import '../providers/order_provider.dart';
+import 'dart:io';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -66,19 +68,32 @@ class _CustomerDashboard extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // THE PRODUCT GRID
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: 8,
-          itemBuilder: (context, index) {
-            return _buildProductCard(context, index);
+        // THE LIVE PRODUCT GRID
+        Consumer<InventoryProvider>(
+          builder: (context, inventory, child) {
+            final products = inventory.products;
+
+            if (products.isEmpty) {
+              return const Center(child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No products currently in stock.', style: TextStyle(color: Colors.grey)),
+              ));
+            }
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.70, // Adjusted to fit the small pictures
+              ),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                return _buildLiveProductCard(context, products[index]);
+              },
+            );
           },
         ),
       ],
@@ -135,15 +150,16 @@ class _CustomerDashboard extends StatelessWidget {
     );
   }
 
-  // Helper widget for the vertical product grid
-  Widget _buildProductCard(BuildContext context, int index) {
-    // clickable!
+  // UPDATED: Now accepts a live ProductModel
+  Widget _buildLiveProductCard(BuildContext context, ProductModel product) {
+    bool inStock = product.stock > 0;
+
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => const MedicineDetailScreen(name: "Vitamin C Zinc", price: "\$2.50")
+              builder: (context) => MedicineDetailScreen(name: product.name, price: "\$${product.price.toStringAsFixed(2)}")
           ),
         );
       },
@@ -155,30 +171,53 @@ class _CustomerDashboard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(child: Icon(Icons.local_pharmacy, size: 50, color: Colors.teal)),
-              const Spacer(),
-              const Text('Vitamin C Zinc', style: TextStyle(fontWeight: FontWeight.bold)),
-              const Text('Square Pharma', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              // The Smart Medicine Picture (Handles Network & Local Files)
+              Expanded(
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: product.imageUrl.startsWith('http')
+                    // If it starts with http, it's a web link (or future Firebase URL)
+                        ? Image.network(
+                      product.imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.local_pharmacy, size: 50, color: Colors.teal),
+                    )
+                    // If it doesn't, it's a local file from the owner's phone!
+                        : Image.file(
+                      // Ensure you import 'dart:io' at the top of the file!
+                      File(product.imageUrl), // Note: use actual dart:io File import, see below
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text('Stock: ${product.stock}', style: TextStyle(color: inStock ? Colors.grey : Colors.red, fontSize: 12)),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('\$2.50', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                  Text('\$${product.price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                   IconButton(
-                    icon: const Icon(Icons.add_shopping_cart, size: 20, color: Colors.deepPurple),
-                    onPressed: () {
+                    icon: Icon(Icons.add_shopping_cart, size: 20, color: inStock ? Colors.deepPurple : Colors.grey),
+                    onPressed: inStock ? () {
                       Provider.of<CartProvider>(context, listen: false).addItem(
-                        'p_vitc_$index',
-                        'Vitamin C Zinc',
-                        2.50,
+                        product.id,
+                        product.name,
+                        product.price,
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Added Vitamin C to cart!'),
-                            duration: Duration(seconds: 1)
+                        SnackBar(
+                            content: Text('Added ${product.name} to cart!'),
+                            duration: const Duration(seconds: 1)
                         ),
                       );
-                    },
+                    } : null,
                   ),
                 ],
               )
@@ -216,15 +255,12 @@ class _OwnerDashboard extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const PendingPrescriptionsScreen()),
               );
             }),
-
-            // NEW: The Manage Inventory card is now clickable and routes to our new screen!
             _buildAdminCard(Icons.inventory, 'Manage Inventory', Colors.blue, () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ManageInventoryScreen()),
               );
             }),
-
             _buildAdminCard(Icons.receipt_long, 'Bill Activity', Colors.green, () {
               Navigator.push(
                 context,
@@ -243,10 +279,9 @@ class _OwnerDashboard extends StatelessWidget {
     );
   }
 
-  // NEW: Added a VoidCallback 'onTap' parameter so we can tell each card what to do when clicked
   Widget _buildAdminCard(IconData icon, String title, Color color, VoidCallback onTap) {
     return InkWell(
-      onTap: onTap, // Executes whatever command we passed in
+      onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Card(
         elevation: 4,
@@ -320,7 +355,6 @@ class CartScreen extends StatelessWidget {
                             icon: const Icon(Icons.delete_outline, color: Colors.red),
                             onPressed: () {
                               Provider.of<CartProvider>(context, listen: false).removeItem(productId);
-
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('${item.name} removed'),
@@ -359,18 +393,12 @@ class CartScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // NEW LOGIC: Only checkout if cart is not empty
                     if (cart.items.isNotEmpty) {
-                      // 1. Send the order to the OrderProvider
                       Provider.of<OrderProvider>(context, listen: false).placeOrder(
                         cart.totalAmount,
                         cart.items.values.toList(),
                       );
-
-                      // 2. Clear the cart
                       cart.clearCart();
-
-                      // 3. Show success message
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Order Sent to Owner for Approval!'),
@@ -409,7 +437,6 @@ class ProfileScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
-        // --- PROFILE HEADER ---
         const CircleAvatar(
           radius: 50,
           backgroundColor: Colors.deepPurple,
@@ -427,17 +454,13 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 32),
 
-        // --- SETTINGS LIST ---
         const Divider(),
         ListTile(
           leading: const Icon(Icons.person_outline, color: Colors.deepPurple),
           title: const Text('Edit Profile'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
           },
         ),
         ListTile(
@@ -445,10 +468,7 @@ class ProfileScreen extends StatelessWidget {
           title: const Text('Delivery Addresses'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const DeliveryAddressScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const DeliveryAddressScreen()));
           },
         ),
         ListTile(
@@ -457,20 +477,14 @@ class ProfileScreen extends StatelessWidget {
           subtitle: const Text('Theme, Notifications, & Language'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
           },
         ),
         const Divider(),
 
-        // --- LOGOUT BUTTON ---
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: () {
-            Provider.of<CartProvider>(context, listen: false).clearCart();
-
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -513,10 +527,7 @@ class MedicineDetailScreen extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.teal.shade50,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: Colors.teal.shade50, shape: BoxShape.circle),
               child: const Icon(Icons.medication, size: 120, color: Colors.teal),
             ),
             const SizedBox(height: 32),
