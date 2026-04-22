@@ -5,7 +5,7 @@ import '../screens/upload_screen.dart';
 import '../screens/reminder_screen.dart';
 import '../screens/discount_screen.dart';
 import '../screens/settings_screen.dart';
-
+import '../screens/pending_orders_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -86,19 +86,12 @@ class AppDrawer extends StatelessWidget {
               onTap: () { /* Navigate to Inventory */ },
             ),
             ListTile(
-              leading: const Icon(Icons.verified_user_outlined),
-              title: const Text('Verification'),
-              onTap: () { /* Navigate to Verification */ },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Expiry Tracker'),
-              onTap: () { /* Navigate to Expiry */ },
-            ),
-            ListTile(
-              leading: const Icon(Icons.send_outlined),
-              title: const Text('Orders'),
-              onTap: () { /* Navigate to Orders */ },
+              leading: const Icon(Icons.shopping_bag_outlined, color: Colors.deepPurple),
+              title: const Text('Pending Orders'),
+              onTap: () {
+                Navigator.pop(context); // Closes the drawer
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const PendingOrdersScreen()));
+              },
             ),
             ListTile(
               leading: const Icon(Icons.local_shipping_outlined),

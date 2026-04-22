@@ -6,6 +6,11 @@ import 'login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'delivery_address_screen.dart';
 import 'settings_screen.dart';
+import 'manage_inventory_screen.dart';
+import 'bill_activity_screen.dart';
+import 'pending_prescriptions_screen.dart';
+import 'expiring_soon_screen.dart';
+import '../providers/order_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -205,27 +210,55 @@ class _OwnerDashboard extends StatelessWidget {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           children: [
-            _buildAdminCard(Icons.warning_amber, 'Pending Prescriptions', Colors.red),
-            _buildAdminCard(Icons.inventory, 'Manage Inventory', Colors.blue),
-            _buildAdminCard(Icons.date_range, 'Expiring Soon', Colors.orange),
-            _buildAdminCard(Icons.monetization_on, 'Today\'s Sales', Colors.green),
+            _buildAdminCard(Icons.warning_amber, 'Pending Prescriptions', Colors.red, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PendingPrescriptionsScreen()),
+              );
+            }),
+
+            // NEW: The Manage Inventory card is now clickable and routes to our new screen!
+            _buildAdminCard(Icons.inventory, 'Manage Inventory', Colors.blue, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ManageInventoryScreen()),
+              );
+            }),
+
+            _buildAdminCard(Icons.receipt_long, 'Bill Activity', Colors.green, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BillActivityScreen()),
+              );
+            }),
+            _buildAdminCard(Icons.date_range, 'Expiring Soon', Colors.orange, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ExpiringSoonScreen()),
+              );
+            }),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildAdminCard(IconData icon, String title, Color color) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: color),
-          const SizedBox(height: 12),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ],
+  // NEW: Added a VoidCallback 'onTap' parameter so we can tell each card what to do when clicked
+  Widget _buildAdminCard(IconData icon, String title, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap, // Executes whatever command we passed in
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: color),
+            const SizedBox(height: 12),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ],
+        ),
       ),
     );
   }
@@ -326,10 +359,25 @@ class CartScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    cart.clearCart();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order Placed Successfully!')),
-                    );
+                    // NEW LOGIC: Only checkout if cart is not empty
+                    if (cart.items.isNotEmpty) {
+                      // 1. Send the order to the OrderProvider
+                      Provider.of<OrderProvider>(context, listen: false).placeOrder(
+                        cart.totalAmount,
+                        cart.items.values.toList(),
+                      );
+
+                      // 2. Clear the cart
+                      cart.clearCart();
+
+                      // 3. Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Order Sent to Owner for Approval!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),

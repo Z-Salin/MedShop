@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Import Provider
-import 'providers/user_provider.dart'; // Import your new class
+import 'package:provider/provider.dart';
+import 'providers/user_provider.dart';
 import 'screens/login_screen.dart';
 import 'widgets/app_drawer.dart';
 import 'screens/dashboard_screens.dart';
 import 'providers/cart_provider.dart';
+import 'providers/order_provider.dart';
+
 
 void main() {
   runApp(
@@ -12,6 +14,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()), // NEW!
       ],
       child: const MedShopApp(),
     ),
@@ -27,10 +30,29 @@ class MedShopApp extends StatelessWidget {
       title: 'MedShop',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6200EA), // A punchy, electric purple!
+          secondary: const Color(0xFF00BFA5), // A vibrant teal accent for buttons
+          surfaceTint: Colors.transparent,    // Removes the weird grey tint on cards
+        ),
+
+        // This globally upgrades EVERY Card in your app instantly!
+        cardTheme: CardThemeData(
+          elevation: 8,
+          // A soft, semi-transparent purple shadow instead of harsh black
+          shadowColor: Color(0xFF6200EA).withOpacity(0.3),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          surfaceTintColor: Colors.white,
+        ),
+
+        // Makes all your app bars look cleaner
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+        ),
       ),
-      home: const LoginScreen(), // Notice we don't pass the role here anymore!
+      home: const LoginScreen(),
     );
   }
 }
@@ -43,14 +65,11 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // 1. The Local State variable. It defaults to 0 (The Home Screen).
   int _selectedIndex = 0;
-
-  // 2. A list of the screens we created in Step 1.
-  // The order here MUST match the order of your BottomNavigationBar items!
+// navigation button pages
   final List<Widget> _pages = [
     const HomeScreen(),
-    const CartScreen(), // <--- This was changed!
+    const CartScreen(),
     const ProfileScreen(),
   ];
 
@@ -76,16 +95,15 @@ class _MainLayoutState extends State<MainLayout> {
         selectedItemColor: Colors.deepPurple,
         unselectedItemColor: Colors.grey,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
+          BottomNavigationBarItem(    //home button
             icon: Icon(Icons.home),
             label: 'Home',
           ),
-          // 2. Change the icon and label here!
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart), // Changed from camera_alt
-            label: 'Cart',                   // Changed from 'Scan'
+          BottomNavigationBarItem(    //cart button
+            icon: Icon(Icons.shopping_cart),
+            label: 'Cart',
           ),
-          BottomNavigationBarItem(
+          BottomNavigationBarItem(   //profile button
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
