@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
-import '../providers/inventory_provider.dart'; // UPDATED: Pointing to the real Inventory cloud brain
+import '../providers/inventory_provider.dart';
 
 class DiscountScreen extends StatelessWidget {
   const DiscountScreen({super.key});
@@ -56,7 +56,7 @@ class DiscountScreen extends StatelessWidget {
     );
   }
 
-  // UPDATED: Now accepts 'ProductModel' from the InventoryProvider
+  // UPDATED: Now accepts 'ProductModel' and includes responsive image sizing
   Widget _buildDiscountCard(BuildContext context, ProductModel product) {
     // Logic: Calculate the actual price after the discount
     final double discountAmount = product.price * (product.discountPercentage / 100);
@@ -72,15 +72,26 @@ class DiscountScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
-                    child: product.imageUrl.isNotEmpty
-                        ? Image.network(product.imageUrl, height: 60, fit: BoxFit.contain)
-                        : const Icon(Icons.medication_liquid, size: 60, color: Colors.orange),
+
+                // --- THE RESPONSIVE IMAGE FIX ---
+                Expanded(
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: product.imageUrl.isNotEmpty
+                          ? Image.network(
+                        product.imageUrl,
+                        fit: BoxFit.cover, // Stretches to fill the box nicely
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.local_pharmacy, size: 60, color: Colors.orange),
+                      )
+                          : const Icon(Icons.medication_liquid, size: 80, color: Colors.orange),
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 12),
+
+                // Text details
                 Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
                 Text('Exp: ${product.expiryDate}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 8),

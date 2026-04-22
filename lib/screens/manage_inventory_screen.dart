@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/inventory_provider.dart';
-import 'dart:typed_data'; // NEW: For handling Web-Safe image bytes
+import 'dart:typed_data';
+import 'dart:convert'; // NEW: For ImgBB Base64
+import 'package:http/http.dart' as http; // NEW: For ImgBB API
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart'; // NEW: Firebase Storage!
 
 class ManageInventoryScreen extends StatefulWidget {
   const ManageInventoryScreen({super.key});
@@ -13,7 +14,6 @@ class ManageInventoryScreen extends StatefulWidget {
 }
 
 class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
-  // We keep this local list just for the nice UI folders, but the real data lives in Firebase now!
   final List<Map<String, dynamic>> _inventoryCategories = [];
 
   final TextEditingController _categoryController = TextEditingController();
@@ -27,14 +27,12 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
     _stockController.clear();
     _expiryController.clear();
 
-    // Web-Safe variables for the image
     Uint8List? selectedImageBytes;
-    String? selectedImageName;
-    bool isUploading = false; // To show a loading spinner
+    bool isUploading = false;
 
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent closing while uploading
+      barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
             builder: (context, setDialogState) {
@@ -44,18 +42,15 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // --- THE WEB-SAFE IMAGE PICKER ---
                       GestureDetector(
                         onTap: () async {
                           final picker = ImagePicker();
                           final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
                           if (pickedFile != null) {
-                            // Read as bytes! This works flawlessly on Chrome/Web and Mobile.
                             final bytes = await pickedFile.readAsBytes();
                             setDialogState(() {
                               selectedImageBytes = bytes;
-                              selectedImageName = pickedFile.name;
                             });
                           }
                         },
@@ -70,7 +65,6 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
                           child: selectedImageBytes != null
                               ? ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            // Display the raw bytes
                             child: Image.memory(selectedImageBytes!, fit: BoxFit.cover),
                           )
                               : const Column(
@@ -92,12 +86,11 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
                       const SizedBox(height: 12),
                       TextField(controller: _expiryController, decoration: const InputDecoration(labelText: 'Expiry Date (e.g. Mar 2027)', border: OutlineInputBorder())),
 
-                      // Show a spinner if we are talking to Firebase
                       if (isUploading) ...[
                         const SizedBox(height: 16),
                         const CircularProgressIndicator(),
                         const SizedBox(height: 8),
-                        const Text('Uploading to Cloud...', style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+                        const Text('Uploading via ImgBB...', style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
                       ]
                     ],
                   ),
@@ -111,24 +104,30 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
                     onPressed: isUploading ? null : () async {
                       if (_categoryController.text.isEmpty || _priceController.text.isEmpty) return;
 
-                      // 1. Lock the UI and show the spinner
                       setDialogState(() { isUploading = true; });
 
                       String finalImageUrl = 'https://via.placeholder.com/150/EEEEEE/9E9E9E?text=No+Img';
 
                       try {
-                        // 2. FIREBASE STORAGE UPLOAD MAGIC
-                        if (selectedImageBytes != null && selectedImageName != null) {
-                          // Create a unique file path in the cloud
-                          final storageRef = FirebaseStorage.instance
-                              .ref()
-                              .child('medicine_images/${DateTime.now().millisecondsSinceEpoch}_$selectedImageName');
+                        // --- 2. IMGBB UPLOAD MAGIC ---
+                        if (selectedImageBytes != null) {
+                          String base64Image = base64Encode(selectedImageBytes!);
 
-                          // Upload the bytes
-                          final uploadTask = await storageRef.putData(selectedImageBytes!);
+                          // PASTE YOUR IMGBB KEY HERE!
+                          const String imgbbKey = 'c5ccca2fe85ca634fdcb3b7857dcb7dd';
+                          final Uri url = Uri.parse('https://api.imgbb.com/1/upload');
 
-                          // Get the secure web link!
-                          finalImageUrl = await uploadTask.ref.getDownloadURL();
+                          final response = await http.post(url, body: {
+                            'key': imgbbKey,
+                            'image': base64Image,
+                          });
+
+                          if (response.statusCode == 200) {
+                            final jsonResponse = jsonDecode(response.body);
+                            finalImageUrl = jsonResponse['data']['url']; // The secure web link!
+                          } else {
+                            throw Exception('ImgBB rejected the file.');
+                          }
                         }
 
                         // 3. Save to Firestore (Database)
@@ -137,10 +136,9 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
                           double.tryParse(_priceController.text) ?? 0.0,
                           int.tryParse(_stockController.text) ?? 0,
                           finalImageUrl,
-                          _expiryController.text.trim(),// <--- We pass the secure Firebase link!
+                          _expiryController.text.trim(),
                         );
 
-                        // Close the dialog and show success
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to Cloud!'), backgroundColor: Colors.green));
@@ -186,9 +184,8 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
           ),
         ),
       ),
-      // We will update the list to read from Firebase next, but for now it's just a blank screen with the FAB
       body: const Center(
-        child: Text('Click the + button to upload to Firebase!', style: TextStyle(color: Colors.grey, fontSize: 16)),
+        child: Text('Click the + button to upload to the Cloud!', style: TextStyle(color: Colors.grey, fontSize: 16)),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddBatchDialog,

@@ -71,8 +71,18 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.local_pharmacy, size: 80, color: Color(0xFF6200EA)),
-                const SizedBox(height: 16),
+                // --- NEW: Custom App Logo ---
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/logo.png',
+                    height: 100,
+                    width: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
                 Text(
                   _isLoginMode ? 'Welcome Back' : 'Create Account',
                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepPurple),
