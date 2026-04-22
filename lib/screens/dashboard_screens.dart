@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/order_provider.dart';
-import '../providers/inventory_provider.dart'; // NEW: Imported the live inventory brain
+import '../providers/inventory_provider.dart';
 import 'login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'delivery_address_screen.dart';
@@ -33,31 +33,60 @@ class HomeScreen extends StatelessWidget {
 }
 
 // ==========================================
-// 1. THE CUSTOMER E-COMMERCE VIEW
+// 1. THE CUSTOMER E-COMMERCE VIEW (UPDATED WITH SEARCH)
 // ==========================================
-class _CustomerDashboard extends StatelessWidget {
+class _CustomerDashboard extends StatefulWidget {
   const _CustomerDashboard();
+
+  @override
+  State<_CustomerDashboard> createState() => _CustomerDashboardState();
+}
+
+class _CustomerDashboardState extends State<_CustomerDashboard> {
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Top Selling Medicines',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-        ),
-        const SizedBox(height: 16),
-
-        // THE CAROUSEL
-        SizedBox(
-          height: 180,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 4,
-            itemBuilder: (context, index) {
-              return _buildCarouselCard(context, index);
-            },
+        // --- THE SEARCH BAR ---
+        TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value; // Updates the grid in real-time!
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search for medicines...',
+            prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+            // Adds a clear button if they have typed something
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+              icon: const Icon(Icons.clear, color: Colors.grey),
+              onPressed: () {
+                _searchController.clear();
+                setState(() {
+                  _searchQuery = '';
+                });
+              },
+            )
+                : null,
+            filled: true,
+            fillColor: Colors.deepPurple.shade50,
+            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide.none,
+            ),
           ),
         ),
 
@@ -72,15 +101,34 @@ class _CustomerDashboard extends StatelessWidget {
         // THE LIVE PRODUCT GRID
         Consumer<InventoryProvider>(
           builder: (context, inventory, child) {
-            final products = inventory.products;
+            // FILTER LOGIC: Match the search query against the product names
+            final products = inventory.products.where((p) {
+              return p.name.toLowerCase().contains(_searchQuery.toLowerCase());
+            }).toList();
 
-            if (products.isEmpty) {
+            // 1. If the cloud is totally empty
+            if (inventory.products.isEmpty) {
               return const Center(child: Padding(
                 padding: EdgeInsets.all(32.0),
                 child: Text('No products currently in stock.', style: TextStyle(color: Colors.grey)),
               ));
             }
 
+            // 2. If they searched for something that doesn't exist
+            if (products.isEmpty) {
+              return Center(child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    const Icon(Icons.search_off, size: 60, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text('No medicines found for "$_searchQuery"', style: const TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ));
+            }
+
+            // 3. Display the filtered grid!
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -88,7 +136,7 @@ class _CustomerDashboard extends StatelessWidget {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.70, // Adjusted to fit the small pictures
+                childAspectRatio: 0.70,
               ),
               itemCount: products.length,
               itemBuilder: (context, index) {
@@ -101,57 +149,7 @@ class _CustomerDashboard extends StatelessWidget {
     );
   }
 
-  // Helper widget for the horizontal carousel
-  Widget _buildCarouselCard(BuildContext context, int index) {
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        color: Colors.deepPurple.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.deepPurple.shade100),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          const Icon(Icons.medication_liquid, size: 60, color: Colors.deepPurple),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Napa Extra 500mg', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 4),
-                const Text('Fever & Pain Relief', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: () {
-                    Provider.of<CartProvider>(context, listen: false).addItem(
-                      'p_napa_$index',
-                      'Napa Extra 500mg',
-                      1.50,
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Added Napa to cart!'), duration: Duration(seconds: 1)),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 36),
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Add to Cart'),
-                )
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  // UPDATED: Now accepts a live ProductModel
+  // Live Product Card
   Widget _buildLiveProductCard(BuildContext context, ProductModel product) {
     bool inStock = product.stock > 0;
 
@@ -187,8 +185,7 @@ class _CustomerDashboard extends StatelessWidget {
                     )
                     // If it doesn't, it's a local file from the owner's phone!
                         : Image.file(
-                      // Ensure you import 'dart:io' at the top of the file!
-                      File(product.imageUrl), // Note: use actual dart:io File import, see below
+                      File(product.imageUrl),
                       fit: BoxFit.cover,
                       width: double.infinity,
                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.grey),
@@ -327,7 +324,7 @@ class CartScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // --- NEW: THE PRESCRIPTION SYNC BUTTON ---
+          // --- THE PRESCRIPTION SYNC BUTTON ---
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
