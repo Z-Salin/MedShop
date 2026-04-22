@@ -34,7 +34,7 @@ class AppDrawer extends StatelessWidget {
 
           // --- SHARED MENU ITEMS ---
           ListTile(
-            leading: const Icon(Icons.home_outlined),
+            leading: const Icon(Icons.home_outlined, color: Colors.deepPurple),
             title: const Text('Home'),
             onTap: () {
               // Navigate to Home
@@ -45,7 +45,7 @@ class AppDrawer extends StatelessWidget {
           // --- CUSTOMER ONLY ITEMS ---
           if (!isOwner) ...[
             ListTile(
-              leading: const Icon(Icons.upload_file),
+              leading: const Icon(Icons.upload_file, color: Colors.deepPurple),
               title: const Text('Upload Prescription'),
               onTap: () {
                 Navigator.pop(context);
@@ -56,7 +56,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.alarm),
+              leading: const Icon(Icons.alarm, color: Colors.deepPurple),
               title: const Text('Reminder'),
               onTap: () {
                 Navigator.pop(context);
@@ -67,7 +67,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.local_offer),
+              leading: const Icon(Icons.local_offer, color: Colors.deepPurple),
               title: const Text('Discounts'),
               onTap: () {
                 Navigator.pop(context);
@@ -82,7 +82,7 @@ class AppDrawer extends StatelessWidget {
           // --- SHOP OWNER ONLY ITEMS ---
           if (isOwner) ...[
             ListTile(
-              leading: const Icon(Icons.folder_outlined),
+              leading: const Icon(Icons.folder_outlined, color: Colors.deepPurple),
               title: const Text('Inventory'),
               onTap: () {
                 // Navigate to Inventory
@@ -98,7 +98,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.local_shipping_outlined),
+              leading: const Icon(Icons.local_shipping_outlined, color: Colors.deepPurple),
               title: const Text('Supplier'),
               onTap: () {
                 Navigator.pop(context);
@@ -110,7 +110,7 @@ class AppDrawer extends StatelessWidget {
           // --- SHARED SETTINGS ---
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.settings_outlined),
+            leading: const Icon(Icons.settings_outlined, color: Colors.deepPurple),
             title: const Text('Settings'),
             onTap: () {
               Navigator.pop(context);

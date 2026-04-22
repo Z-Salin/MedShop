@@ -64,104 +64,118 @@ class ExpiringSoonScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(color: isExpired ? Colors.red : Colors.orange, width: 1.5),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    leading: CircleAvatar(
-                      backgroundColor: isExpired ? Colors.red.shade100 : Colors.orange.shade100,
-                      child: Icon(
-                        isExpired ? Icons.delete_forever : Icons.access_time_filled,
-                        color: isExpired ? Colors.red : Colors.orange,
-                      ),
-                    ),
-                    title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // FIX: Replaced ListTile with a robust Padding > Row layout to prevent overflows!
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 4),
-                        Text('Batch: ${item['batch']}  •  Stock: ${item['stock']}'),
-                        Text('Expiry Date: ${item['expiry']}'),
-                      ],
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          item['status'],
-                          style: TextStyle(
+                        // The Leading Avatar
+                        CircleAvatar(
+                          backgroundColor: isExpired ? Colors.red.shade100 : Colors.orange.shade100,
+                          radius: 24,
+                          child: Icon(
+                            isExpired ? Icons.delete_forever : Icons.access_time_filled,
                             color: isExpired ? Colors.red : Colors.orange,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        // A button for the owner to quickly apply a discount or remove stock
-                        ElevatedButton(
-                          onPressed: () {
-                            if (isExpired) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from database.')));
-                              return;
-                            }
+                        const SizedBox(width: 16),
 
-                            // NEW: A controller to hold whatever number the Owner types
-                            final TextEditingController percentController = TextEditingController(text: '20');
+                        // The Middle Text (Title and Subtitles)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 4),
+                              Text('Batch: ${item['batch']}  •  Stock: ${item['stock']}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                              Text('Expiry: ${item['expiry']}', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
 
-                            // Show a dialog to choose the custom discount percentage
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text('Discount ${item['name']}'),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text('Enter the discount percentage below:'),
-                                      const SizedBox(height: 16),
-                                      // NEW: The custom text field!
-                                      TextField(
-                                        controller: percentController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Discount %',
-                                          border: OutlineInputBorder(),
-                                          suffixText: '%',
+                        // The Trailing Column (Status and Button)
+                        Column(
+                          mainAxisSize: MainAxisSize.min, // FIX: This specifically tells the column not to stretch!
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              item['status'],
+                              style: TextStyle(
+                                color: isExpired ? Colors.red : Colors.orange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (isExpired) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from database.')));
+                                  return;
+                                }
+
+                                final TextEditingController percentController = TextEditingController(text: '20');
+
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: Text('Discount ${item['name']}'),
+                                      // FIX: Added SingleChildScrollView so the keyboard doesn't cause a layout overflow
+                                      content: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text('Enter the discount percentage below:'),
+                                            const SizedBox(height: 16),
+                                            TextField(
+                                              controller: percentController,
+                                              keyboardType: TextInputType.number,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Discount %',
+                                                border: OutlineInputBorder(),
+                                                suffixText: '%',
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        // 1. Safely parse the number the user typed
-                                        int percentage = int.tryParse(percentController.text) ?? 0;
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            int percentage = int.tryParse(percentController.text) ?? 0;
 
-                                        if (percentage > 0 && percentage <= 100) {
-                                          // 2. Send it to the Provider using the CUSTOM percentage!
-                                          Provider.of<DiscountProvider>(context, listen: false)
-                                              .addDiscountItem(item['name'], 4.00, percentage, item['expiry']);
+                                            if (percentage > 0 && percentage <= 100) {
+                                              Provider.of<DiscountProvider>(context, listen: false)
+                                                  .addDiscountItem(item['name'], 4.00, percentage, item['expiry']);
 
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text('Applied $percentage% OFF!'), backgroundColor: Colors.green),
-                                          );
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                                      child: const Text('Apply Discount'),
-                                    ),
-                                  ],
+                                              Navigator.pop(context);
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('Applied $percentage% OFF!'), backgroundColor: Colors.green),
+                                              );
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                                          child: const Text('Apply Discount'),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isExpired ? Colors.red : Colors.orange,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(80, 30),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                          child: Text(isExpired ? 'Discard' : 'Apply Discount'),
-                        )
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isExpired ? Colors.red : Colors.orange,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(80, 32),
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                              ),
+                              child: Text(isExpired ? 'Discard' : 'Discount'),
+                            )
+                          ],
+                        ),
                       ],
                     ),
                   ),
