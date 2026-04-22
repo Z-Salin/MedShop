@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // NEW: The Cloud Database!
 
-// The blueprint for a product displayed to the Customer
+// The blueprint for a product
 class ProductModel {
   final String id;
   final String name;
-  final String imageUrl; // NEW: To hold the medicine pictures!
+  final String imageUrl;
   final double price;
   int stock;
 
@@ -18,44 +19,50 @@ class ProductModel {
 }
 
 class InventoryProvider with ChangeNotifier {
-  // Pre-loading with some mock data using placeholder images for the prototype
-  final List<ProductModel> _products = [
-    ProductModel(
-      id: 'P-101',
-      name: 'Napa Extra 500mg',
-      imageUrl: 'https://via.placeholder.com/150/E1BEE7/6200EA?text=Napa',
-      price: 1.50,
-      stock: 150,
-    ),
-    ProductModel(
-      id: 'P-102',
-      name: 'Vitamin C Zinc',
-      imageUrl: 'https://via.placeholder.com/150/C8E6C9/2E7D32?text=Vit+C',
-      price: 2.50,
-      stock: 85,
-    ),
-    ProductModel(
-      id: 'P-103',
-      name: 'Beximco Cough Syrup',
-      imageUrl: 'https://via.placeholder.com/150/FFF9C4/F57F17?text=Syrup',
-      price: 4.00,
-      stock: 12,
-    ),
-  ];
-
+  List<ProductModel> _products = [];
   List<ProductModel> get products => [..._products];
 
-  // We will wire this up to the Owner's Manage Inventory screen next!
-  void addProduct(String name, double price, int stock, String imageUrl) {
-    _products.add(
-      ProductModel(
-        id: 'P-${DateTime.now().millisecondsSinceEpoch.toString().substring(9)}',
-        name: name,
-        imageUrl: imageUrl,
-        price: price,
-        stock: stock,
-      ),
-    );
-    notifyListeners();
+  // When this provider boots up, it connects to Firebase immediately
+  InventoryProvider() {
+    _listenToCloudInventory();
+  }
+
+  // 1. READ FROM CLOUD: Live 24/7 Stream
+  void _listenToCloudInventory() {
+    FirebaseFirestore.instance
+        .collection('inventory') // This is the name of our folder in the cloud
+        .snapshots() // 'snapshots' means it listens for live updates constantly
+        .listen((snapshot) {
+
+      // Map the cloud data into our Flutter models
+      _products = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return ProductModel(
+          id: doc.id, // Firebase automatically creates a unique ID for us!
+          name: data['name'] ?? '',
+          imageUrl: data['imageUrl'] ?? '',
+          price: (data['price'] ?? 0).toDouble(), // Safely handle decimals
+          stock: data['stock'] ?? 0,
+        );
+      }).toList();
+
+      notifyListeners(); // Tell the Customer's screen to redraw!
+    });
+  }
+
+  // 2. WRITE TO CLOUD: Pushing a new batch to Firebase
+  Future<void> addProduct(String name, double price, int stock, String imageUrl) async {
+    // Instead of adding it to a local list, we push it to the cloud!
+    await FirebaseFirestore.instance.collection('inventory').add({
+      'name': name,
+      'price': price,
+      'stock': stock,
+      'imageUrl': imageUrl,
+      'createdAt': FieldValue.serverTimestamp(), // Always good to track when it was added
+    });
+
+    // Notice we don't call notifyListeners() here!
+    // Why? Because pushing to the cloud automatically triggers the snapshot listener above,
+    // which handles updating the UI for us automatically. Pure magic.
   }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "343187262376",
+    "project_id": "medshop-2026",
+    "storage_bucket": "medshop-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343187262376:android:ff8ff4d083941d47192b9d",
+        "android_client_info": {
+          "package_name": "com.example.medshop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAAtQnUIF2EMS4eKY9aSpMiusY7s9L3aU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
