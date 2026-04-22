@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // NEW: The Cloud Database!
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// The blueprint for a product
 class ProductModel {
   final String id;
   final String name;
   final String imageUrl;
   final double price;
   int stock;
+  // --- NEW FIELDS ---
+  final String expiryDate;
+  final double discountPercentage;
 
   ProductModel({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-    required this.price,
-    required this.stock,
+    required this.id, required this.name, required this.imageUrl,
+    required this.price, required this.stock,
+    required this.expiryDate, required this.discountPercentage,
   });
 }
 
@@ -22,44 +22,56 @@ class InventoryProvider with ChangeNotifier {
   List<ProductModel> _products = [];
   List<ProductModel> get products => [..._products];
 
-  // When this provider boots up, it connects to Firebase immediately
   InventoryProvider() {
     _listenToCloudInventory();
   }
 
-  // 1. READ FROM CLOUD: Live 24/7 Stream
   void _listenToCloudInventory() {
-    FirebaseFirestore.instance
-        .collection('inventory') // This is the name of our folder in the cloud
-        .snapshots() // 'snapshots' means it listens for live updates constantly
-        .listen((snapshot) {
-
-      // Map the cloud data into our Flutter models
+    FirebaseFirestore.instance.collection('inventory').snapshots().listen((snapshot) {
       _products = snapshot.docs.map((doc) {
         final data = doc.data();
+
+        // This 'num' trick handles both integers (50) and doubles (50.0) flawlessly
+        final num discountValue = data['discountPercentage'] ?? 0;
+        final num priceValue = data['price'] ?? 0;
+
         return ProductModel(
-          id: doc.id, // Firebase automatically creates a unique ID for us!
-          name: data['name'] ?? '',
+          id: doc.id,
+          name: data['name'] ?? 'Unknown Medicine',
           imageUrl: data['imageUrl'] ?? '',
-          price: (data['price'] ?? 0).toDouble(), // Safely handle decimals
+          price: priceValue.toDouble(),
           stock: data['stock'] ?? 0,
+          expiryDate: data['expiryDate'] ?? 'No Date',
+          discountPercentage: discountValue.toDouble(), // Force it to double here
         );
       }).toList();
 
-      notifyListeners(); // Tell the Customer's screen to redraw!
+      print("Inventory Updated: ${_products.length} items synced."); // Debug log
+      notifyListeners();
     });
   }
 
-  // 2. WRITE TO CLOUD: Pushing a new batch to Firebase
-  Future<void> addProduct(String name, double price, int stock, String imageUrl) async {
-    // Instead of adding it to a local list, we push it to the cloud!
+  // --- UPDATED: Now accepts Expiry Date ---
+  Future<void> addProduct(String name, double price, int stock, String imageUrl, String expiryDate) async {
     await FirebaseFirestore.instance.collection('inventory').add({
       'name': name,
       'price': price,
       'stock': stock,
       'imageUrl': imageUrl,
-      'createdAt': FieldValue.serverTimestamp(), // Always good to track when it was added
+      'expiryDate': expiryDate, // Save the expiry date!
+      'discountPercentage': 0.0, // Always starts with 0% discount
+      'createdAt': FieldValue.serverTimestamp(),
     });
+  }
 
+  // --- NEW: Owner function to apply a discount ---
+  Future<void> updateDiscount(String docId, double discount) async {
+    await FirebaseFirestore.instance.collection('inventory').doc(docId).update({
+      'discountPercentage': discount,
+    });
+  }
+
+  Future<void> deleteProduct(String docId) async {
+    await FirebaseFirestore.instance.collection('inventory').doc(docId).delete();
   }
 }

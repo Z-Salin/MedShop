@@ -82,14 +82,6 @@ class AppDrawer extends StatelessWidget {
           // --- SHOP OWNER ONLY ITEMS ---
           if (isOwner) ...[
             ListTile(
-              leading: const Icon(Icons.folder_outlined, color: Colors.deepPurple),
-              title: const Text('Inventory'),
-              onTap: () {
-                // Navigate to Inventory
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.shopping_bag_outlined, color: Colors.deepPurple),
               title: const Text('Pending Orders'),
               onTap: () {

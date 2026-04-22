@@ -136,7 +136,8 @@ class _ManageInventoryScreenState extends State<ManageInventoryScreen> {
                           _categoryController.text.trim(),
                           double.tryParse(_priceController.text) ?? 0.0,
                           int.tryParse(_stockController.text) ?? 0,
-                          finalImageUrl, // <--- We pass the secure Firebase link!
+                          finalImageUrl,
+                          _expiryController.text.trim(),// <--- We pass the secure Firebase link!
                         );
 
                         // Close the dialog and show success

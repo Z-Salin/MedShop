@@ -79,15 +79,20 @@ class SupplierScreen extends StatelessWidget {
                             // Accept pushes the item into the Customer's Live Inventory!
                             Provider.of<InventoryProvider>(context, listen: false).addProduct(
                               offer.medicineName,
-                              suggestedRetail, // Automatically set retail price
-                              offer.quantity,
-                              'https://via.placeholder.com/150/E1BEE7/6200EA?text=Stock',
+                              suggestedRetail, // 2. Automatically set retail price
+                              offer.quantity,  // 3. Stock
+                              'https://via.placeholder.com/150/E1BEE7/6200EA?text=Stock', // 4. Image
+                              offer.expiryDate, // 5. NEW: Passing the Expiry Date from the supplier!
                             );
 
                             // Remove the offer from the inbox
                             supplierData.removeOffer(offer.id);
+
                             ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Stock Added to Inventory!'), backgroundColor: Colors.green)
+                                const SnackBar(
+                                    content: Text('Stock Added to Inventory!'),
+                                    backgroundColor: Colors.green
+                                )
                             );
                           },
                           icon: const Icon(Icons.check, color: Colors.white),
