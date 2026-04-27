@@ -15,8 +15,8 @@ class PrescriptionProvider with ChangeNotifier {
       String base64Image = base64Encode(bytes);
 
       // 2. YOUR IMGBB KEY GOES HERE
-      const String imgbbKey = 'c5ccca2fe85ca634fdcb3b7857dcb7dd';
-      final Uri url = Uri.parse('https://api.imgbb.com/1/upload');
+      const String imgbbKey = '';
+      final Uri url = Uri.parse('');
 
       // 3. Fire it off to their servers
       final response = await http.post(url, body: {

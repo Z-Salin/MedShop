@@ -55,8 +55,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAs6TWEnTtEofDAb33UDs7GGf63yaelMq4',
-    appId: '1:343187262376:ios:acb6214d974e54e9192b9d',
+    apiKey: '',
+    appId: '',
     messagingSenderId: '343187262376',
     projectId: 'medshop-2026',
     storageBucket: 'medshop-2026.firebasestorage.app',
@@ -64,8 +64,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC-yUFFZp-2TZyah4UM-Oqb2D1UUXdySYc',
-    appId: '1:343187262376:web:7494858625984d0f192b9d',
+    apiKey: '',
+    appId: '',
     messagingSenderId: '343187262376',
     projectId: 'medshop-2026',
     authDomain: 'medshop-2026.firebaseapp.com',
